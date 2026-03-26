@@ -1,0 +1,117 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+categories:
+  - title: "🚀 Features"
+    labels:
+      - "feature"
+      - "enhancement"
+      - "feat"
+  - title: "🛡️ Security & Auditing"
+    labels:
+      - "security"
+      - "audit"
+  - title: "🐛 Bug Fixes"
+    labels:
+      - "fix"
+      - "bugfix"
+      - "bug"
+  - title: "🧰 Maintenance"
+    labels:
+      - "chore"
+      - "documentation"
+      - "docs"
+      - "refactor"
+      - "test"
+      - "ci"
+      - "perf"
+
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+
+version-resolver:
+  major:
+    labels:
+      - "major"
+      - "breaking"
+  minor:
+    labels:
+      - "minor"
+      - "feature"
+      - "feat"
+      - "enhancement"
+  patch:
+    labels:
+      - "patch"
+      - "fix"
+      - "bugfix"
+      - "bug"
+      - "hotfix"
+      - "docs"
+      - "documentation"
+      - "chore"
+  default: patch
+
+autolabeler:
+  - label: "bug"
+    branch:
+      - '/fix\/.+/'
+    title:
+      - "/fix/i"
+      - "/bug/i"
+  - label: "feature"
+    branch:
+      - '/feat\/.+/'
+      - '/feature\/.+/'
+    title:
+      - "/feat/i"
+      - "/feature/i"
+  - label: "security"
+    files:
+      - ".lpm-audit/**/*"
+    title:
+      - "/security/i"
+      - "/audit/i"
+  - label: "documentation"
+    branch:
+      - '/docs?\/.+/'
+    title:
+      - "/docs/i"
+      - "/documentation/i"
+    files:
+      - "*.md"
+      - "docs/**/*"
+  - label: "chore"
+    branch:
+      - '/chore\/.+/'
+    title:
+      - "/chore/i"
+
+template: |
+  ## What's Changed in $RESOLVED_VERSION
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+  ## 🛡️ Installation & Setup
+
+  See the [Setup Guide](https://github.com/$OWNER/$REPOSITORY#setup) for OIDC and Azure configuration.
+
+  ```yaml
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Azure Login (OIDC)
+      uses: azure/login@v3
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Run Least Privilege Audit
+      uses: $OWNER/$REPOSITORY@v$RESOLVED_VERSION
+      with:
+        logAnalyticsWorkspaceId: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+        daysToQuery: 30

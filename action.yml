@@ -1,0 +1,39 @@
+name: "LeastPrivilegedMSGraph Audit"
+description: "Audits MS Graph permissions vs actual usage using Log Analytics"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  logAnalyticsWorkspaceId:
+    description: "Azure Log Analytics Workspace ID"
+    required: true
+  daysToQuery:
+    description: "Number of days to analyze"
+    default: "7"
+  enableGitCommit:
+    description: "Commit JSON/CliXml state back to repo"
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Azure Login (OIDC)
+      uses: azure/login@v3
+      with:
+        client-id: ${{ env.AZURE_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Run Audit Logic
+      shell: pwsh
+      run: |
+        & "${{ github.action_path }}/entrypoint.ps1" `
+          -WorkspaceId "${{ inputs.logAnalyticsWorkspaceId }}" `
+          -Days ${{ inputs.daysToQuery }} `
+          -DoCommit "${{ inputs.enableGitCommit }}"

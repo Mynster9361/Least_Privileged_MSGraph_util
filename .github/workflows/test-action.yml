@@ -1,0 +1,49 @@
+name: Test Action
+
+on:
+    push:
+        branches: [main, master]
+        paths-ignore:
+            - "**.md"
+            - "LICENSE"
+    pull_request:
+        branches: [main, master]
+    workflow_dispatch: # Allows you to run it manually for debugging
+
+permissions:
+    id-token: write # Required for OIDC login
+    contents: write # Required for the action to commit inventory.json
+
+jobs:
+    test-audit:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Run Local Action
+              uses: ./
+              env:
+                  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+              with:
+                  logAnalyticsWorkspaceId: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+                  daysToQuery: 7
+                  enableGitCommit: "true"
+
+            - name: Verify Outputs
+              shell: pwsh
+              run: |
+                  $InventoryPath = ".lpm-audit/inventory.json"
+                  if (Test-Path $InventoryPath) {
+                      "Inventory file created successfully."
+                      $Content = Get-Content $InventoryPath | ConvertFrom-Json
+                      "Found $($Content.Count) items in the audit."
+                  } else {
+                      "Inventory file was not found in $InventoryPath"
+                      exit 1
+                  }

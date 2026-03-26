@@ -1,0 +1,84 @@
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - ".github/**"
+      - "*.md"
+      - "LICENSE"
+      - ".gitignore"
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the draft release"
+        required: false
+        type: boolean
+        default: false
+      tag:
+        description: "Override release tag (e.g., 1.2.3)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Update the draft based on merged PRs
+      - uses: release-drafter/release-drafter@v6
+        id: release_drafter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-name: release-drafter.yml
+          tag: ${{ github.event.inputs.tag || '' }}
+
+      # 2. If manually triggered with 'publish: true', flip the bit from draft to live
+      - name: Publish Release
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const release_id = '${{ steps.release_drafter.outputs.id }}';
+            const { data: release } = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release_id
+            });
+
+            if (release.draft) {
+              const tagName = '${{ github.event.inputs.tag }}' || '${{ steps.release_drafter.outputs.tag_name }}';
+              console.log(`Publishing draft release ${release.name} as ${tagName}...`);
+              
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release_id,
+                draft: false,
+                tag_name: tagName,
+                name: release.name || tagName
+              });
+            } else {
+              console.log(`Release ${release.name} is already published.`);
+            }
+
+      # 3. Feedback in the Action Logs
+      - name: Display Release Info
+        if: always()
+        run: |
+          echo "::notice ::Draft Release: ${{ steps.release_drafter.outputs.html_url }}"
+          echo "Calculated Tag: ${{ steps.release_drafter.outputs.tag_name }}"
