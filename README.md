@@ -20,7 +20,7 @@ Each run of this action performs a deep-dive security audit of your Entra ID ten
 
 ## Prerequisites
 
-### 1. Configure OIDC (No Secrets!)
+### 1. Configure OIDC (Federated credentials so no secrets) 
 This action uses **Workload Identity Federation**. You never need to store a Client Secret in GitHub.
 
 1.  **Create an App Registration** in Entra ID (e.g., `GitHub-LPM-Auditor`).
@@ -35,6 +35,7 @@ The Auditor app needs the following access:
 | Provider            | Permission                               | Why                                              |
 | :------------------ | :--------------------------------------- | :----------------------------------------------- |
 | **Microsoft Graph** | `Application.Read.All`                   | To read service principals and their roles.      |
+| **Microsoft Graph** | `Directory.Read.All`                   | To read /oauth2PermissionGrants and their roles. If you do not care about delegated permissions change the permissionType parameter to "Application" |
 | **Azure IAM**       | `Log Analytics Reader` (RBAC permission) | To query the `MicrosoftGraphActivityLogs` table. |
 
 ---
@@ -60,16 +61,19 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - name: Run LeastPrivilegedMSGraph Audit
-        uses: Mynster9361/Least_Privileged_MSGraph@v1
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Checkout Code
+        uses: actions/checkout@v6
         with:
+          fetch-depth: 0
+
+      - name: Run LeastPrivilegedMSGraph Audit
+        uses: Mynster9361/Least_Privileged_MSGraph@latest
+        with:
+          tenantId: ${{ secrets.AZURE_TENANT_ID }}
+          clientId: ${{ secrets.AZURE_CLIENT_ID }}
           logAnalyticsWorkspaceId: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
-          daysToQuery: "30"
-          DoCommit: True
+          daysToQuery: 7
+          enableGitCommit: true
 ```
 
 ## Understanding the Outputs
@@ -81,7 +85,7 @@ After a successful run, the action updates/creates the `.lpm-audit/` folder in y
 * >NOTE: This clixml can also be imported into powershell and create a report by doing something like this:
   ```powershell
   Import-module LeastPrivilegedMSGraph
-  $appData = import-clixml -Path .\.lpm-audit\
-  Export-PermissionAnalysisReport -AppData $appData -OutputPath ".\report.html"
+  $appData = import-clixml -Path .\.lpm-audit\state.clixml
+  $appData | Export-PermissionAnalysisReport
   ```
 * **Step Summary**: Check the **Summary** tab of your GitHub Action run to see a high-level table of **Added** vs **Removed** permissions without leaving the browser.

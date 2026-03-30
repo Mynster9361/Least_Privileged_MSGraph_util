@@ -20,6 +20,9 @@ inputs:
   enableGitCommit:
     description: "Commit JSON/CliXml state back to repo"
     default: "true"
+  permissionType:
+    description: "Type of permissions to audit (e.g., All, Application, Delegated)"
+    default: "All"
 
 runs:
   using: "composite"
@@ -32,4 +35,5 @@ runs:
           -Days ${{ inputs.daysToQuery }} `
           -DoCommit "${{ inputs.enableGitCommit }}" `
           -tenantId "${{ inputs.tenantId }}" `
-          -clientId "${{ inputs.clientId }}"
+          -clientId "${{ inputs.clientId }}" `
+          -permissionType "${{ inputs.permissionType }}" `

@@ -3,7 +3,8 @@ param(
     [string]$clientId,
     [string]$WorkspaceId,
     [int]$Days,
-    [string]$DoCommit
+    [string]$DoCommit,
+    [string]$permissionType
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,7 +17,7 @@ Install-Module -Name LeastPrivilegedMSGraph -Force -AllowClobber -Scope CurrentU
 Initialize-LogAnalyticsApi
 Connect-EntraService -Federated -Service "LogAnalytics", "GraphBeta" -ClientID $clientId -TenantID $tenantId
 "Connected to Entra ID and Log Analytics."
-$Groups = Get-AppRoleAssignment
+$Groups = Get-AppRoleAssignment -permissionType $permissionType
 $Groups | Get-AppActivityData -WorkspaceId $WorkspaceId -Days $Days -ThrottleLimit 20 | Out-Null
 $Groups | Get-AppThrottlingData -WorkspaceId $WorkspaceId -Days $Days | Out-Null
 $CurrentData = $Groups | Get-PermissionAnalysis
