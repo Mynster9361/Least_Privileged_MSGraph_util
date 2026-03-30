@@ -30,4 +30,6 @@ runs:
         & "${{ github.action_path }}/entrypoint.ps1" `
           -WorkspaceId "${{ inputs.logAnalyticsWorkspaceId }}" `
           -Days ${{ inputs.daysToQuery }} `
-          -DoCommit "${{ inputs.enableGitCommit }}"
+          -DoCommit "${{ inputs.enableGitCommit }}" `
+          -tenantId "${{ inputs.tenantId }}" `
+          -clientId "${{ inputs.clientId }}"
