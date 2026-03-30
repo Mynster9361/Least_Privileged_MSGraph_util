@@ -24,36 +24,48 @@ $CurrentData = $Groups | Get-PermissionAnalysis
 
 $Summary = New-Object System.Text.StringBuilder
 $Summary.AppendLine("## MS Graph Permission Audit")
+$Summary.AppendLine("> Analysis timeframe: Last $Days days")
 
 if (Test-Path $CliXmlPath) {
     $OldData = Import-Clixml $CliXmlPath
     $Summary.AppendLine("### Changes since last run")
-    
+    $Summary.AppendLine("<details><summary>Click to expand change details</summary>")
+    $Summary.AppendLine("")
+
     $HasChanges = $false
     foreach ($App in $CurrentData) {
         $OldApp = $OldData | Where-Object { $_.PrincipalId -eq $App.PrincipalId }
         
         if (-not $OldApp) {
-            $Summary.AppendLine("- **New App:** $($App.PrincipalName) (`$($App.PrincipalId)`)")
+            $Summary.AppendLine("- **New App Detected:** $($App.PrincipalName) (`$($App.PrincipalId)`)")
             $HasChanges = $true
             continue
         }
 
-        # Compare Permissions
-        $NewPerms = $App.CurrentPermissions | Where-Object { $_ -notin $OldApp.CurrentPermissions }
-        $RemovedPerms = $OldApp.CurrentPermissions | Where-Object { $_ -notin $App.CurrentPermissions }
+        $CurrentPermStrings = @($App.CurrentPermissions.Permission | Where-Object { $_ })
+        $OldPermStrings = @($OldApp.CurrentPermissions.Permission | Where-Object { $_ })
+
+        $NewPerms = $CurrentPermStrings | Where-Object { $_ -notin $OldPermStrings }
+        $RemovedPerms = $OldPermStrings | Where-Object { $_ -notin $CurrentPermStrings }
 
         if ($NewPerms -or $RemovedPerms) {
             $HasChanges = $true
             $Summary.AppendLine("#### $($App.PrincipalName)")
-            if ($NewPerms) { $Summary.AppendLine("  - Added: ``$($NewPerms -join ', ')``") }
-            if ($RemovedPerms) { $Summary.AppendLine("  - Removed: ``$($RemovedPerms -join ', ')``") }
+            if ($NewPerms) { $Summary.AppendLine("  - **Added:** ``$($NewPerms -join ', ')``") }
+            if ($RemovedPerms) { $Summary.AppendLine("  - **Removed:** ``$($RemovedPerms -join ', ')``") }
         }
     }
-    if (-not $HasChanges) { $Summary.AppendLine("No permission changes detected.") }
+
+    if (-not $HasChanges) { 
+        $Summary.AppendLine("No permission changes detected since the last audit.") 
+    }
+    
+    $Summary.AppendLine("")
+    $Summary.AppendLine("</details>")
 }
 else {
-    $Summary.AppendLine("Baseline established. No previous state found.")
+    $Summary.AppendLine("### Baseline Established")
+    $Summary.AppendLine("No previous state file found. This run has been saved as the new baseline.")
 }
 
 if ($DoCommit -eq "true") {
@@ -62,9 +74,10 @@ if ($DoCommit -eq "true") {
     }
 
     $CurrentData | Export-Clixml -Path $CliXmlPath
-    $CurrentData | Select-Object PrincipalId, PrincipalName, AppRoleCount, CurrentPermissions, ExcessPermissions, MatchedAllActivity | ConvertTo-Json -Depth 10 | Out-File $JsonPath
+    $CurrentData | Select-Object PrincipalId, PrincipalName, AppRoleCount, CurrentPermissions, ExcessPermissions, MatchedAllActivity | 
+        ConvertTo-Json -Depth 10 | Out-File $JsonPath
 
-    "Configuring git and committing changes..."
+    # Git Operations
     git config user.name "github-actions[bot]"
     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -74,11 +87,12 @@ if ($DoCommit -eq "true") {
     if ($status) {
         git commit -m "Automated MS Graph Audit update [skip ci]"
         git push
-        "Changes pushed to repository."
+        "Changes successfully pushed to repository."
     }
     else {
-        "No file changes detected, skipping commit."
+        "No file changes detected, skipping git push."
     }
 }
 
 $Summary.ToString() | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+"Job summary generated."
