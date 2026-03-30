@@ -5,6 +5,12 @@ branding:
   color: "blue"
 
 inputs:
+  tenantId:
+    description: "Entra Tenant ID"
+    required: true
+  clientId:
+    description: "Entra App (Service Principal) Client ID with permissions to read directory data and query Log Analytics"
+    required: true
   logAnalyticsWorkspaceId:
     description: "Azure Log Analytics Workspace ID"
     required: true
