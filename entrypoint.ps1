@@ -12,7 +12,7 @@ $JsonPath = "$StateDir/inventory.json"
 Install-Module -Name LeastPrivilegedMSGraph -Force -AllowClobber -Scope CurrentUser > $null
 
 Initialize-LogAnalyticsApi
-Connect-EntraService -Federated -Service "LogAnalytics", "GraphBeta"
+Connect-EntraService -Federated -Service "LogAnalytics", "GraphBeta" -ClientID $env:clientId -TenantID $env:tenantId
 "Connected to Entra ID and Log Analytics."
 $Groups = Get-AppRoleAssignment
 $Groups | Get-AppActivityData -WorkspaceId $WorkspaceId -Days $Days -ThrottleLimit 20 | Out-Null
