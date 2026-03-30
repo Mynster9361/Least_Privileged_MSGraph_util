@@ -3,47 +3,37 @@ name: Test Action
 on:
     push:
         branches: [main, master]
-        paths-ignore:
-            - "**.md"
-            - "LICENSE"
-    pull_request:
-        branches: [main, master]
-    workflow_dispatch: # Allows you to run it manually for debugging
+    workflow_dispatch:
 
 permissions:
-    id-token: write # Required for OIDC login
-    contents: write # Required for the action to commit inventory.json
+    id-token: write
+    contents: write
 
 jobs:
     test-audit:
         runs-on: ubuntu-latest
-
         steps:
             - name: Checkout Code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
-
+            - name: Login to Azure
+              uses: azure/login@v3
+              with:
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  allow-no-subscriptions: true
             - name: Run Local Action
               uses: ./
-              env:
-                  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-                  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-                  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
               with:
                   logAnalyticsWorkspaceId: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
                   daysToQuery: 7
                   enableGitCommit: "true"
-
             - name: Verify Outputs
               shell: pwsh
               run: |
-                  $InventoryPath = ".lpm-audit/inventory.json"
-                  if (Test-Path $InventoryPath) {
-                      "Inventory file created successfully."
-                      $Content = Get-Content $InventoryPath | ConvertFrom-Json
-                      "Found $($Content.Count) items in the audit."
+                  if (Test-Path ".lpm-audit/inventory.json") {
+                      Write-Host "Success!"
                   } else {
-                      "Inventory file was not found in $InventoryPath"
-                      exit 1
+                      throw "Audit file missing"
                   }

@@ -55,12 +55,28 @@ else {
 }
 
 if ($DoCommit -eq "true") {
-    if (!(Test-Path $StateDir)) { New-Item -ItemType Directory $StateDir | Out-Null }
+    if (!(Test-Path $StateDir)) { 
+        New-Item -ItemType Directory $StateDir -Force | Out-Null 
+    }
 
     $CurrentData | Export-Clixml -Path $CliXmlPath
+    $CurrentData | Select-Object PrincipalId, PrincipalName, AppRoleCount, CurrentPermissions, ExcessPermissions, MatchedAllActivity | ConvertTo-Json -Depth 10 | Out-File $JsonPath
 
-    $CurrentData | Select-Object PrincipalId, PrincipalName, AppRoleCount, CurrentPermissions, ExcessPermissions, MatchedAllActivity | 
-    ConvertTo-Json -Depth 10 | Out-File $JsonPath
+    "Configuring git and committing changes..."
+    git config user.name "github-actions[bot]"
+    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    git add "$StateDir/*"
+
+    $status = git status --porcelain
+    if ($status) {
+        git commit -m "Automated MS Graph Audit update [skip ci]"
+        git push
+        "Changes pushed to repository."
+    }
+    else {
+        "No file changes detected, skipping commit."
+    }
 }
 
 $Summary.ToString() | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
