@@ -93,7 +93,7 @@ template: |
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
   ## 🛡️ Installation & Setup
-  See the [Setup Guide](https://github.com/$OWNER/$REPOSITORY#usage) for OIDC and Azure configuration.
+  See the [Setup Guide](https://github.com/$OWNER/$REPOSITORY?tab=readme-ov-file#usage) for OIDC and Azure configuration.
 
   ```yaml
   name: "LPM Permission Audit"
