@@ -93,25 +93,35 @@ template: |
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
   ## 🛡️ Installation & Setup
-
-  See the [Setup Guide](https://github.com/$OWNER/$REPOSITORY#setup) for OIDC and Azure configuration.
+  See the [Setup Guide](https://github.com/$OWNER/$REPOSITORY#usage) for OIDC and Azure configuration.
 
   ```yaml
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
+  name: "LPM Permission Audit"
 
-    - name: Azure Login (OIDC)
-      uses: azure/login@v3
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  on:
+    schedule:
+      - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+    workflow_dispatch:     # Allow manual runs
 
-    - name: Run Least Privilege Audit
+  permissions:
+    id-token: write      # Required for OIDC
+    contents: write      # Required to commit state files
+
+  jobs:
+    audit:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v6
+          with:
+            fetch-depth: 0
+
+    - name: Run LeastPrivilegedMSGraph Audit
       uses: $OWNER/$REPOSITORY@v$RESOLVED_VERSION
       with:
+        tenantId: ${{ secrets.AZURE_TENANT_ID }}
+        clientId: ${{ secrets.AZURE_CLIENT_ID }}
         logAnalyticsWorkspaceId: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
-        daysToQuery: 30
+        daysToQuery: 7
+        enableGitCommit: true
+  ```
