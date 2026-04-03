@@ -8,10 +8,10 @@
 
 Each run of this action performs a deep-dive security audit of your Entra ID tenant:
 
-1.  **Inventory:** Collects every service principal and its assigned Graph permissions via `Get-AppRoleAssignment`.
-2.  **Enrichment:** Pulls real activity telemetry from your Azure Log Analytics workspace (`Get-AppActivityData`) to see what permissions are actually being used.
-3.  **Throtling data:** Pulls activity metrics for throttling for the applications `Get-AppThrottlingData` 
-4.  **Analysis:** Identifies "Excess Permissions"—API scopes that are assigned but haven't been touched in weeks (`Get-PermissionAnalysis`).
+1.  **Inventory:** Collects every service principal and its assigned Graph permissions via `Get-LPMSAppRoleAssignment`.
+2.  **Enrichment:** Pulls real activity telemetry from your Azure Log Analytics workspace (`Get-LPMSAppActivityData`) to see what permissions are actually being used.
+3.  **Throtling data:** Pulls activity metrics for throttling for the applications `Get-LPMSAppThrottlingData` 
+4.  **Analysis:** Identifies "Excess Permissions"—API scopes that are assigned but haven't been touched in weeks (`Get-LPMSPermissionAnalysis`).
 5.  **Diffing:** Compares the results against the previous run's state to surface newly added apps or modified permissions.
 6.  **Reporting:** Writes a clean Markdown table to the GitHub Step Summary.
 7.  **Persistence:** Commits the updated `inventory.json` and `state.clixml` back to your repository so every change is tracked in your Git history.

@@ -12,15 +12,15 @@ $StateDir = ".lpm-audit"
 $CliXmlPath = "$StateDir/state.clixml"
 $JsonPath = "$StateDir/inventory.json"
 
-Install-Module -Name LeastPrivilegedMSGraph -Force -AllowClobber -Scope CurrentUser > $null
+Install-Module -Name LeastPrivilegedMSGraph -RequiredVersion 3.0.0 -Force -AllowClobber -Scope CurrentUser > $null
 
-Initialize-LogAnalyticsApi
+Initialize-LPMSLogAnalyticsApi
 Connect-EntraService -Federated -Service "LogAnalytics", "GraphBeta" -ClientID $clientId -TenantID $tenantId
 "Connected to Entra ID and Log Analytics."
-$Groups = Get-AppRoleAssignment -permissionType $permissionType
-$Groups | Get-AppActivityData -WorkspaceId $WorkspaceId -Days $Days -ThrottleLimit 20 | Out-Null
-$Groups | Get-AppThrottlingData -WorkspaceId $WorkspaceId -Days $Days | Out-Null
-$CurrentData = $Groups | Get-PermissionAnalysis
+$Groups = Get-LPMSAppRoleAssignment -permissionType $permissionType
+$Groups | Get-LPMSAppActivityData -WorkspaceId $WorkspaceId -Days $Days -ThrottleLimit 20 | Out-Null
+$Groups | Get-LPMSAppThrottlingData -WorkspaceId $WorkspaceId -Days $Days | Out-Null
+$CurrentData = $Groups | Get-LPMSPermissionAnalysis
 "Analyzed $($CurrentData.Count) Service Principals."
 
 $Summary = New-Object System.Text.StringBuilder
